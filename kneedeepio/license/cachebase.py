@@ -7,5 +7,5 @@
 ### FUNCTIONS ###
 
 ### CLASSES ###
-class ConfigBase:
+class CacheBase:
     pass
