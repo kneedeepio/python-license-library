@@ -4,8 +4,9 @@
 import datetime
 
 from kneedeepio.license.contentbase import ContentBase
+from kneedeepio.license.signaturebase import SignatureBase
 
-from kneedeepio.license.exceptions import NoContentException, InvalidContentException
+from kneedeepio.license.exceptions import NoContentException, InvalidContentException, InvalidSignatureException
 
 ### GLOBALS ###
 
@@ -76,6 +77,8 @@ class License:
     def signature(self, value):
         # FIXME: Does anything need to be done here?
         #        Should the signature be a "signature" object?
+        if not isinstance(value, SignatureBase):
+            raise InvalidSignatureException
         self._signature = value
 
     def get_data_for_signing(self):
