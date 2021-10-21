@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 ### IMPORTS ###
-import datetime
+import json
+
+from datetime import datetime
 
 from kneedeepio.license.contentbase import ContentBase
 from kneedeepio.license.signaturebase import SignatureBase
 
-from kneedeepio.license.exceptions import NoContentException, InvalidContentException, InvalidSignatureException
+from kneedeepio.license.exceptions import NoContentException, InvalidSignatureException
 
 ### GLOBALS ###
 
@@ -16,7 +18,7 @@ from kneedeepio.license.exceptions import NoContentException, InvalidContentExce
 class License:
     def __init__(self):
         self._content = None
-        self._creation_date = datetime.Datetime.utcnow()
+        self._creation_date = datetime.utcnow()
         self._expiry_date = None
         self._validation_url = None # FIXME: Should this be a "server" object that contains the URLs?
         self._signature = None
@@ -31,7 +33,7 @@ class License:
     def content(self, value):
         # FIXME: Should this be able to check for the implemented ContentBase Class?
         if not isinstance(value, ContentBase):
-            raise InvalidContentException
+            raise TypeError('Expecting object of type ContentBase')
         self._content = value
 
     @property
@@ -42,23 +44,44 @@ class License:
 
     @creation_date.setter
     def creation_date(self, value):
-        # FIXME: This should check for datetime, and if not datetime, try to convert
-        if not isinstance(value, datetime.Datetime):
-            raise ValueError # FIXME: This should try to convert to datetime
+        if not isinstance(value, datetime):
+            raise TypeError('Expecting object of type datetime')
         self._creation_date = value
 
     @property
+    def creation_date_iso(self):
+        return self.creation_date.isoformat()
+
+    @creation_date_iso.setter
+    def creation_date_iso(self, value):
+        if not isinstance(value, str):
+            raise TypeError('Expecting object of type str')
+        self.creation_date = datetime.fromisoformat(value)
+
+    @property
     def expiry_date(self):
+        # NOTE: Returning None if the expiry date is not set
         return self._expiry_date
 
     @expiry_date.setter
     def expiry_date(self, value):
-        if not isinstance(value, datetime.Datetime):
-            raise ValueError # FIXME: This should try to convert to datetime
+        if not isinstance(value, datetime):
+            raise TypeError('Expecting object of type datetime')
         if value < self.creation_date:
             # Don't allow the expiry date to be older than the creation_date
             raise ValueError # FIXME: Make a better exception for this
         self._expiry_date = value
+
+    @property
+    def expiry_date_iso(self):
+        # NOTE: Returning an empty string if the expiry date is not set
+        return self.expiry_date.isoformat() if self.expiry_date is not None else ""
+
+    @expiry_date_iso.setter
+    def expiry_date_iso(self, value):
+        if not isinstance(value, str):
+            raise TypeError('Expecting object of type str')
+        self.expiry_date = datetime.fromisoformat(value)
 
     @property
     def validation_url(self):
@@ -71,6 +94,8 @@ class License:
 
     @property
     def signature(self):
+        if self._signature is None:
+            raise InvalidSignatureException
         return self._signature
 
     @signature.setter
@@ -78,22 +103,45 @@ class License:
         # FIXME: Does anything need to be done here?
         #        Should the signature be a "signature" object?
         if not isinstance(value, SignatureBase):
-            raise InvalidSignatureException
+            raise TypeError('Expecting object of type SignatureBase')
         self._signature = value
 
     def get_data_for_signing(self):
-        # FIXME: This should serialize all of the data from the other values in preparation for signing
-        raise NotImplementedError
+        # This method is to be called to get the JSON data string for signing.
+        # NOTE: This JSON data string is sorted and compact.
+        # FIXME: This should JSON serialize all of the data values except the signature in preparation for signing
+        value = {}
+        value['content'] = self.content.get_content_for_license()
+        value['creation_date'] = self.creation_date_iso
+        value['expiry_date'] = self.expiry_date_iso
+        value['validation_url'] = self.validation_url
+        return json.dumps(value, sort_keys = True, separators = (',', ':'))
 
-    def is_license_valid(self):
-        # FIXME: This should check the signature (and all of the other values) for validity and return True or False
-        raise NotImplementedError
+    # The validity should be checked by a handler, not internal to the license, so removing this from the license class
+    # def is_license_valid(self):
+    #     # FIXME: This should check the signature (and all of the other values) for validity and return True or False
+    #     raise NotImplementedError
 
     def import_data(self, license_data):
-        # FIXME: This should deserialize the license data into the component fields
+        if not isinstance(license_data, str):
+            raise TypeError('Expecting object of type str')
+        value = json.loads(license_data)
+        # FIXME: How to figure out what the Content class should be?
+        self.creation_date_iso = value['creation_date']
+        self.expiry_date_iso = value['expiry_date']
+        self.validation_url = value['validation_url']
+        # FIXME: How to figure out what the Signature class should be?
+        # FIXME: Should this import method be in the license handler instead?
+        #        If so, the export method should probably be moved the license handler also.
         raise NotImplementedError
 
     def export_data(self):
-        # FIXME: This should serialize all of the data from all of the values for exporting to an external transport
-        #        mechanism.
-        raise NotImplementedError
+        # This method is to be called to get the JSON data string containing the entire license.
+        # NOTE: This JSON data string is sorted and pretty printed.
+        value = {}
+        value['content'] = self.content.get_content_for_license()
+        value['creation_date'] = self.creation_date_iso
+        value['expiry_date'] = self.expiry_date_iso
+        value['validation_url'] = self.validation_url
+        value['signature'] = self.signature.get_signature_for_license()
+        return json.dumps(value, sort_keys = True, indent = 2)
