@@ -7,30 +7,27 @@
 ### FUNCTIONS ###
 
 ### CLASSES ###
-class LicenseHandler:
-    def __init__(self, license_library_object, license_signor_object):
-        self.library = license_library_object
-        self.signor = license_signor_object
-
+class LicenseHandlerBase:
     def import_license(self, license_data):
-        # Use to import a license from an external transport mechanism, such as a file.
-        pass
+        # Used to import a license from an external transport mechanism, such as a file.
+        raise NotImplementedError
 
-    def export_license(self):
-        pass
+    def export_license(self, identifier):
+        # Used to export a license to an external transport mechanism, such as a file.
+        raise NotImplementedError
 
     def generate_license(self):
-        pass
+        raise NotImplementedError
 
-    def validate_license(self):
+    def validate_license(self, identifier):
         # FIXME: This should check the signature (and all of the other values) for validity and return True or False
-        pass
+        raise NotImplementedError
 
     def deactivate_license(self):
-        pass
+        raise NotImplementedError
 
     def enumerate_license(self):
-        pass
+        raise NotImplementedError
 
 # The validity should be checked by a handler, not internal to the license, so removing this from the license class
 # def is_license_valid(self):

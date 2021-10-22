@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 ### IMPORTS ###
+from kneedeepio.license.contentbase import ContentBase
 
 ### GLOBALS ###
 
 ### FUNCTIONS ###
 
 ### CLASSES ###
-class ContentDict:
+class ContentDict(ContentBase):
     _content: dict
 
     def __init__(self):

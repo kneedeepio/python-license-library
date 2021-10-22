@@ -10,14 +10,16 @@
 class KneeDeepIOLicenseException(Exception):
     pass
 
-# Content Exceptions
-class NoContentException(KneeDeepIOLicenseException):
+# License Exceptions
+class InvalidAssigneeException(KneeDeepIOLicenseException):
     pass
 
 class InvalidContentException(KneeDeepIOLicenseException):
     pass
 
-# Signature Exceptions
+class InvalidExpiryDateException(KneeDeepIOLicenseException):
+    pass
+
 class InvalidSignatureException(KneeDeepIOLicenseException):
     pass
 

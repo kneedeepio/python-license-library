@@ -13,7 +13,7 @@ class SignatureBase:
     #      'method': 'HMAC-SHA256',
     #      'value': '0123456789ABCDEF'
     #    }
-    # This is to be decided with the signature, signor, and license handler implementations.
+    # This is to be defined with the signature, signor, and license handler implementations.
     def set_signature_from_license(self, value):
         # The value is supplied as a dict from the license object to this object to instantiate (aka load) the contents
         # of the license into this class.

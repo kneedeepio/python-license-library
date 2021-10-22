@@ -2,13 +2,18 @@
 
 ### IMPORTS ###
 import json
+import uuid
 
 from datetime import datetime
 
 from kneedeepio.license.contentbase import ContentBase
 from kneedeepio.license.signaturebase import SignatureBase
 
-from kneedeepio.license.exceptions import NoContentException, InvalidSignatureException
+from kneedeepio.license.exceptions import \
+    InvalidAssigneeException, \
+    InvalidContentException, \
+    InvalidExpiryDateException, \
+    InvalidSignatureException
 
 ### GLOBALS ###
 
@@ -16,24 +21,54 @@ from kneedeepio.license.exceptions import NoContentException, InvalidSignatureEx
 
 ### CLASSES ###
 class License:
-    def __init__(self):
+    def __init__(self, content_class = ContentBase, signature_class = SignatureBase):
+        if not issubclass(content_class, ContentBase):
+            raise TypeError('content_class must be a subclass of ContentBase')
+        if not issubclass(signature_class, SignatureBase):
+            raise TypeError('signature_class must be a subclass of SignatureBase')
+        self._identifier = uuid.uuid4()
+        self._assignee = None
+        self._content_class = content_class
         self._content = None
         self._creation_date = datetime.utcnow()
         self._expiry_date = None
         self._validation_url = None # FIXME: Should this be a "server" object that contains the URLs?
+        self._signature_class = signature_class
         self._signature = None
+
+    @property
+    def identifier(self):
+        return self._identifier
+
+    @identifier.setter
+    def identifier(self, value):
+        if not isinstance(value, uuid.UUID):
+            raise TypeError('Expecting object of type UUID')
+        self._identifier = value
+
+    @property
+    def assignee(self):
+        return self._assignee
+
+    @assignee.setter
+    def assignee(self, value):
+        if not isinstance(value, str):
+            raise TypeError('Expecting object of type str')
+        if (len(value) < 3) or (len(value) > 255): # Arbitrary limits that seem reasonable based on an *SQL VARCHAR
+            raise InvalidAssigneeException
+        self._assignee = value
 
     @property
     def content(self):
         if self._content is None:
-            raise NoContentException
+            raise InvalidContentException
         return self._content
 
     @content.setter
     def content(self, value):
         # FIXME: Should this be able to check for the implemented ContentBase Class?
-        if not isinstance(value, ContentBase):
-            raise TypeError('Expecting object of type ContentBase')
+        if not isinstance(value, self._content_class):
+            raise TypeError('Expecting object of type {}'.format(type(self._content_class).__name__))
         self._content = value
 
     @property
@@ -55,7 +90,7 @@ class License:
     @creation_date_iso.setter
     def creation_date_iso(self, value):
         if not isinstance(value, str):
-            raise TypeError('Expecting object of type str')
+            raise TypeError('Expecting object of type str') # FIXME: Should this handle bytes objects?
         self.creation_date = datetime.fromisoformat(value)
 
     @property
@@ -68,8 +103,7 @@ class License:
         if not isinstance(value, datetime):
             raise TypeError('Expecting object of type datetime')
         if value < self.creation_date:
-            # Don't allow the expiry date to be older than the creation_date
-            raise ValueError # FIXME: Make a better exception for this
+            raise InvalidExpiryDateException('Expiry Date older than Creation Date')
         self._expiry_date = value
 
     @property
@@ -80,7 +114,7 @@ class License:
     @expiry_date_iso.setter
     def expiry_date_iso(self, value):
         if not isinstance(value, str):
-            raise TypeError('Expecting object of type str')
+            raise TypeError('Expecting object of type str') # FIXME: Should this handle bytes objects?
         self.expiry_date = datetime.fromisoformat(value)
 
     @property
@@ -90,6 +124,8 @@ class License:
     @validation_url.setter
     def validation_url(self, value):
         # FIXME: Should do what's needed to make sure the URL is safe/encoded correctly.
+        # FIXME: Should this be an object that contains information about the issuing server?
+        #        Could include hostname/URL, validation path,
         self._validation_url = value
 
     @property
@@ -100,45 +136,41 @@ class License:
 
     @signature.setter
     def signature(self, value):
-        # FIXME: Does anything need to be done here?
-        #        Should the signature be a "signature" object?
-        if not isinstance(value, SignatureBase):
-            raise TypeError('Expecting object of type SignatureBase')
+        if not isinstance(value, self._signature_class):
+            raise TypeError('Expecting object of type {}'.format(type(self._signature_class).__name__))
         self._signature = value
 
     def get_data_for_signing(self):
         # This method is to be called to get the JSON data string for signing.
         # NOTE: This JSON data string is sorted and compact.
-        # FIXME: This should JSON serialize all of the data values except the signature in preparation for signing
         value = {}
+        value['identifier'] = str(self.identifier)
+        value['assignee'] = self.assignee
         value['content'] = self.content.get_content_for_license()
         value['creation_date'] = self.creation_date_iso
         value['expiry_date'] = self.expiry_date_iso
         value['validation_url'] = self.validation_url
         return json.dumps(value, sort_keys = True, separators = (',', ':'))
 
-    # The validity should be checked by a handler, not internal to the license, so removing this from the license class
-    # def is_license_valid(self):
-    #     # FIXME: This should check the signature (and all of the other values) for validity and return True or False
-    #     raise NotImplementedError
-
     def import_data(self, license_data):
+        # This method is to be called to set the data values for the entire license from a JSON data string
         if not isinstance(license_data, str):
-            raise TypeError('Expecting object of type str')
+            raise TypeError('Expecting object of type str') # FIXME: Should this handle bytes objects?
         value = json.loads(license_data)
-        # FIXME: How to figure out what the Content class should be?
+        self.identifier = uuid.UUID(value['identifer'])
+        self.assignee = value['assignee']
+        self.content = self._content_class().set_content_from_license(value['content'])
         self.creation_date_iso = value['creation_date']
         self.expiry_date_iso = value['expiry_date']
         self.validation_url = value['validation_url']
-        # FIXME: How to figure out what the Signature class should be?
-        # FIXME: Should this import method be in the license handler instead?
-        #        If so, the export method should probably be moved the license handler also.
-        raise NotImplementedError
+        self.signature = self._signature_class().set_signature_from_license(value['signature'])
 
     def export_data(self):
         # This method is to be called to get the JSON data string containing the entire license.
         # NOTE: This JSON data string is sorted and pretty printed.
         value = {}
+        value['identifier'] = str(self.identifier)
+        value['assignee'] = self.assignee
         value['content'] = self.content.get_content_for_license()
         value['creation_date'] = self.creation_date_iso
         value['expiry_date'] = self.expiry_date_iso
