@@ -14,9 +14,13 @@ class ContentDict(ContentBase):
     def __init__(self):
         self._content = {}
 
+    def __eq__(self, other):
+        if not isinstance(other, ContentDict):
+            return NotImplemented
+        return self.content == other.content
+
     @property
     def content(self):
-        # FIXME: Should this raise an empty (No Content) exception?
         return self._content
 
     @content.setter

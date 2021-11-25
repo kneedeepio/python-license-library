@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ### IMPORTS ###
-import datetime
+from datetime import datetime
 
 from kneedeepio.license.license import License
 from kneedeepio.license.cachebase import CacheBase
@@ -15,7 +15,7 @@ class LocalCache(CacheBase):
     def __init__(self, num_assignees = 300, num_license_per_assignee = 30):
         self._num_assignees = num_assignees
         self._num_license_per_assignee = num_license_per_assignee
-        self._cache = { }
+        self._cache = {}
 
     def insert_license(self, assignee, value):
         # Check if the value is an actual license
@@ -29,14 +29,14 @@ class LocalCache(CacheBase):
                 # FIXME: do this part
                 pass
             # Create assignee with license list and last use time.
-            self._cache[str(assignee)] = { 'last_used': datetime.Datetime.utcnow(), 'licenses': [] }
+            self._cache[str(assignee)] = { 'last_used': datetime.utcnow(), 'licenses': [] }
         # Check if license list is full.
         if len(self._cache[str(assignee)]['licenses']) > self._num_license_per_assignee:
             # Find the oldest license and remove it
             # FIXME: do this part
             pass
         # Insert license into assignee license list and update last use time.
-        self._cache[str(assignee)]['last_used'] = datetime.Datetime.utcnow()
+        self._cache[str(assignee)]['last_used'] = datetime.utcnow()
         self._cache[str(assignee)]['licenses'].append(value)
 
     # FIXME: Should there be an insert_license_list?
@@ -45,6 +45,7 @@ class LocalCache(CacheBase):
         # FIXME: Do the following:
         #        - Check if assignee is in dict. If not, return empty list.
         #        - Return list of licenses for the assignee.
+        result = []
         if str(assignee) in self._cache:
-            return self._cache[str(assignee)]['licenses']
-        return []
+            result = self._cache[str(assignee)]['licenses']
+        return result

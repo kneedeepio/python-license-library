@@ -152,19 +152,6 @@ class License:
         value['validation_url'] = self.validation_url
         return json.dumps(value, sort_keys = True, separators = (',', ':'))
 
-    def import_data(self, license_data):
-        # This method is to be called to set the data values for the entire license from a JSON data string
-        if not isinstance(license_data, str):
-            raise TypeError('Expecting object of type str') # FIXME: Should this handle bytes objects?
-        value = json.loads(license_data)
-        self.identifier = uuid.UUID(value['identifer'])
-        self.assignee = value['assignee']
-        self.content = self._content_class().set_content_from_license(value['content'])
-        self.creation_date_iso = value['creation_date']
-        self.expiry_date_iso = value['expiry_date']
-        self.validation_url = value['validation_url']
-        self.signature = self._signature_class().set_signature_from_license(value['signature'])
-
     def export_data(self):
         # This method is to be called to get the JSON data string containing the entire license.
         # NOTE: This JSON data string is sorted and pretty printed.
@@ -177,3 +164,16 @@ class License:
         value['validation_url'] = self.validation_url
         value['signature'] = self.signature.get_signature_for_license()
         return json.dumps(value, sort_keys = True, indent = 2)
+
+    def import_data(self, license_data):
+        # This method is to be called to set the data values for the entire license from a JSON data string
+        if not isinstance(license_data, str):
+            raise TypeError('Expecting object of type str') # FIXME: Should this handle bytes objects?
+        value = json.loads(license_data)
+        self.identifier = uuid.UUID(value['identifer'])
+        self.assignee = value['assignee']
+        self.content = self._content_class().set_content_from_license(value['content'])
+        self.creation_date_iso = value['creation_date']
+        self.expiry_date_iso = value['expiry_date']
+        self.validation_url = value['validation_url']
+        self.signature = self._signature_class().set_signature_from_license(value['signature'])
