@@ -42,9 +42,7 @@ class TestLicense(unittest.TestCase):
     def test_creation_signature_class(self):
         self.logger.debug("%s creation_signature_class", type(self).__name__)
         # NOTE: Don't need to test default values as those will be handled in their getter & setter tests
-        # FIXME: Need to use a different class based on SignatureBase
-        dut_l = kneedeepio.license.License(signature_class = kneedeepio.license.SignatureBase)
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        dut_l = kneedeepio.license.License(signature_class = kneedeepio.license.SignatureSHA256)
 
     def test_creation_bad_content_class(self):
         self.logger.debug("%s creation_bad_content_class", type(self).__name__)
@@ -179,8 +177,18 @@ class TestLicense(unittest.TestCase):
         self.assertNotEqual(test_dti1, test_dti2)
 
     def test_set_bad_creation_date_iso(self):
-        # What happens when using an invalid string?
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s set_bad_creation_date_iso", type(self).__name__)
+        dut_l = kneedeepio.license.License()
+        with self.assertRaises(TypeError):
+            dut_l.creation_date_iso = datetime.utcnow()
+        with self.assertRaises(TypeError):
+            dut_l.creation_date_iso = 1234
+
+    def test_set_invalid_creation_date_iso(self):
+        self.logger.debug("%s set_bad_creation_date_iso", type(self).__name__)
+        dut_l = kneedeepio.license.License()
+        with self.assertRaises(ValueError):
+            dut_l.creation_date_iso = "not an ISO8601 string"
 
     def test_get_set_expiry_date(self):
         self.logger.debug("%s get_set_expiry_date", type(self).__name__)
@@ -213,16 +221,49 @@ class TestLicense(unittest.TestCase):
             dut_l.expiry_date = data_dt
 
     def test_get_set_expiry_date_iso(self):
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s get_set_expiry_date_iso", type(self).__name__)
+        # Create License
+        dut_l = kneedeepio.license.License()
+        # Update datetime
+        test_dt2 = datetime.utcnow()
+        dut_l.expiry_date_iso = test_dt2.isoformat()
+        # Check again for valid datetime
+        test_dti2 = dut_l.expiry_date_iso
+        self.assertIsInstance(test_dt2, datetime)
+        self.assertIsInstance(test_dti2, str)
+        self.assertEqual(test_dti2, test_dt2.isoformat())
 
     def test_set_bad_expiry_date_iso(self):
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s set_bad_expiry_date_iso", type(self).__name__)
+        dut_l = kneedeepio.license.License()
+        with self.assertRaises(TypeError):
+            dut_l.expiry_date_iso = datetime.utcnow()
+        with self.assertRaises(TypeError):
+            dut_l.expiry_date_iso = 1234
+
+    def test_set_invalid_expiry_date_iso(self):
+        self.logger.debug("%s set_bad_expiry_date_iso", type(self).__name__)
+        dut_l = kneedeepio.license.License()
+        with self.assertRaises(ValueError):
+            dut_l.expiry_date_iso = "not an ISO8601 string"
 
     def test_get_set_validation_url(self):
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s get_set_validation_url", type(self).__name__)
+        dut_l = kneedeepio.license.License()
+        data_vurl = "https://example.com/validate"
+        dut_l.validation_url = data_vurl
+        self.assertEqual(dut_l.validation_url, data_vurl)
 
     def test_set_bad_validation_url(self):
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s set_bad_validation_url", type(self).__name__)
+        dut_l = kneedeepio.license.License()
+        with self.assertRaises(TypeError):
+            dut_l.validation_url = 1234
+        with self.assertRaises(ValueError):
+            dut_l.validation_url = "12"
+        with self.assertRaises(ValueError):
+            # From this answer: https://stackoverflow.com/a/2257449
+            dut_l.validation_url = ''.join(random.choices(string.ascii_uppercase + string.digits, k=261))
 
     def test_get_set_signature(self):
         self.logger.debug("%s get_set_signature", type(self).__name__)
@@ -248,15 +289,164 @@ class TestLicense(unittest.TestCase):
         with self.assertRaises(TypeError):
             dut_l.signature = 1234
 
-    def test_get_set_content_with_data(self):
-        # FIXME: Write this test once a basic signature implementation is written
-        self.assertEqual(True, False, "FIXME: Implement this test")
+    def test_get_set_signature_with_data(self):
+        self.logger.debug("%s get_set_signature_with_data", type(self).__name__)
+        # Create License with SignatureSHA256 as signature_class
+        dut_l = kneedeepio.license.License(signature_class = kneedeepio.license.SignatureSHA256)
+        # Check for InvalidContentException
+        with self.assertRaises(InvalidSignatureException):
+            self.assertIsNotNone(dut_l.signature) # This should fail if the exception is not raised for some reason.
+        # Create SignatureSHA256
+        dut_ssha = kneedeepio.license.SignatureSHA256()
+        dut_ssha.value = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        # Set Signature with SignatureSHA256
+        dut_l.signature = dut_ssha
+        # Get Signature with SignatureSHA256
+        test_ssha = dut_l.signature
+        # Verify of type SignatureSHA256
+        self.assertIsInstance(test_ssha, kneedeepio.license.SignatureSHA256)
 
     def test_get_data_for_signing(self):
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s get_data_for_signing", type(self).__name__)
+        # Create License with ContentDict and SignatureSHA256
+        dut_l = kneedeepio.license.License(
+            content_class = kneedeepio.license.ContentDict,
+            signature_class = kneedeepio.license.SignatureSHA256
+        )
+        # Set values
+        dut_l.identifier = uuid.UUID("12345678-1234-5678-1234-567812345678")
+        dut_l.assignee = "name@example.com"
+        dut_cd = kneedeepio.license.ContentDict()
+        dut_cd.content = {"key1": "value2", "key3": "value5"}
+        dut_l.content = dut_cd
+        dut_l.creation_date = datetime.fromtimestamp(3)
+        # Not setting expiry_date yet
+        dut_l.validation_url = "https://example.com/validate"
+        # Get data string and compare to example
+        test_dfs1 = dut_l.get_data_for_signing()
+        data_dfs1 = '{"assignee":"name@example.com","content":{"key1":"value2","key3":"value5"},"creation_date":"1969-12-31T17:00:03","expiry_date":"","identifier":"12345678-1234-5678-1234-567812345678","validation_url":"https://example.com/validate"}'
+        self.assertEqual(test_dfs1, data_dfs1)
+        # Set expiry_date and compare again
+        dut_l.expiry_date = datetime.fromtimestamp(7)
+        test_dfs2 = dut_l.get_data_for_signing()
+        data_dfs2 = '{"assignee":"name@example.com","content":{"key1":"value2","key3":"value5"},"creation_date":"1969-12-31T17:00:03","expiry_date":"1969-12-31T17:00:07","identifier":"12345678-1234-5678-1234-567812345678","validation_url":"https://example.com/validate"}'
+        self.assertEqual(test_dfs2, data_dfs2)
+
+    def test_export_data(self):
+        self.logger.debug("%s export_data", type(self).__name__)
+        # Create License with ContentDict and SignatureSHA256
+        dut_l = kneedeepio.license.License(
+            content_class = kneedeepio.license.ContentDict,
+            signature_class = kneedeepio.license.SignatureSHA256
+        )
+        # Set values
+        dut_l.identifier = uuid.UUID("12345678-1234-5678-1234-567812345678")
+        dut_l.assignee = "name@example.com"
+        dut_cd = kneedeepio.license.ContentDict()
+        dut_cd.content = {"key1": "value2", "key3": "value5"}
+        dut_l.content = dut_cd
+        dut_l.creation_date = datetime.fromtimestamp(3)
+        # Not setting expiry_date yet
+        dut_l.validation_url = "https://example.com/validate"
+        dut_ssha = kneedeepio.license.SignatureSHA256()
+        dut_ssha.value = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        dut_l.signature = dut_ssha
+        # Get data string and compare to example
+        test_ed1 = dut_l.export_data()
+        data_ed1 = '''{
+  "assignee": "name@example.com",
+  "content": {
+    "key1": "value2",
+    "key3": "value5"
+  },
+  "creation_date": "1969-12-31T17:00:03",
+  "expiry_date": "",
+  "identifier": "12345678-1234-5678-1234-567812345678",
+  "signature": {
+    "method": "SHA256",
+    "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+  },
+  "validation_url": "https://example.com/validate"
+}'''
+        self.assertEqual(test_ed1, data_ed1)
+        # Set expiry_date and compare again
+        dut_l.expiry_date = datetime.fromtimestamp(7)
+        test_ed2 = dut_l.export_data()
+        data_ed2 = '''{
+  "assignee": "name@example.com",
+  "content": {
+    "key1": "value2",
+    "key3": "value5"
+  },
+  "creation_date": "1969-12-31T17:00:03",
+  "expiry_date": "1969-12-31T17:00:07",
+  "identifier": "12345678-1234-5678-1234-567812345678",
+  "signature": {
+    "method": "SHA256",
+    "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+  },
+  "validation_url": "https://example.com/validate"
+}'''
+        self.assertEqual(test_ed2, data_ed2)
 
     def test_import_data(self):
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s import_data", type(self).__name__)
+        dut_l = kneedeepio.license.License(
+            content_class = kneedeepio.license.ContentDict,
+            signature_class = kneedeepio.license.SignatureSHA256
+        )
+        data_id1 = '''{
+  "assignee": "name@example.com",
+  "content": {
+    "key1": "value2",
+    "key3": "value5"
+  },
+  "creation_date": "1969-12-31T17:00:03",
+  "expiry_date": "",
+  "identifier": "12345678-1234-5678-1234-567812345678",
+  "signature": {
+    "method": "SHA256",
+    "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+  },
+  "validation_url": "https://example.com/validate"
+}'''
+        dut_l.import_data(data_id1)
+        self.assertEqual(dut_l.identifier, uuid.UUID("12345678-1234-5678-1234-567812345678"))
+        self.assertEqual(dut_l.assignee, "name@example.com")
+        self.assertDictEqual(dut_l.content.get_content_for_license(), {"key1": "value2", "key3": "value5"})
+        self.assertEqual(dut_l.creation_date, datetime.fromtimestamp(3))
+        self.assertIsNone(dut_l.expiry_date)
+        self.assertEqual(dut_l.validation_url, "https://example.com/validate")
+        self.assertDictEqual(dut_l.signature.get_signature_for_license(), {
+            "method": "SHA256",
+            "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        })
+        data_id2 = '''{
+  "assignee": "name@example.com",
+  "content": {
+    "key1": "value2",
+    "key3": "value5"
+  },
+  "creation_date": "1969-12-31T17:00:03",
+  "expiry_date": "1969-12-31T17:00:07",
+  "identifier": "12345678-1234-5678-1234-567812345678",
+  "signature": {
+    "method": "SHA256",
+    "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+  },
+  "validation_url": "https://example.com/validate"
+}'''
+        dut_l.import_data(data_id2)
+        self.assertEqual(dut_l.identifier, uuid.UUID("12345678-1234-5678-1234-567812345678"))
+        self.assertEqual(dut_l.assignee, "name@example.com")
+        self.assertDictEqual(dut_l.content.get_content_for_license(), {"key1": "value2", "key3": "value5"})
+        self.assertEqual(dut_l.creation_date, datetime.fromtimestamp(3))
+        self.assertEqual(dut_l.expiry_date, datetime.fromtimestamp(7))
+        self.assertEqual(dut_l.validation_url, "https://example.com/validate")
+        self.assertDictEqual(dut_l.signature.get_signature_for_license(), {
+            "method": "SHA256",
+            "value": "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"
+        })
 
     def test_import_data_bad_data(self):
         self.assertEqual(True, False, "FIXME: Implement this test")

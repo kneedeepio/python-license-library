@@ -11,6 +11,7 @@ from kneedeepio.license.signaturebase import SignatureBase
 
 # Example Classes
 from kneedeepio.license.contentdict import ContentDict
+from kneedeepio.license.signaturesha256 import SignatureSHA256
 
 ### GLOBALS ###
 

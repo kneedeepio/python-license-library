@@ -126,6 +126,10 @@ class License:
         # FIXME: Should do what's needed to make sure the URL is safe/encoded correctly.
         # FIXME: Should this be an object that contains information about the issuing server?
         #        Could include hostname/URL, validation path,
+        if not isinstance(value, str):
+            raise TypeError('Expecting object of type str')
+        if (len(value) < 11) or (len(value) > 255): # Arbitrary limits that seem reasonable based on an *SQL VARCHAR
+            raise ValueError
         self._validation_url = value
 
     @property
@@ -170,10 +174,13 @@ class License:
         if not isinstance(license_data, str):
             raise TypeError('Expecting object of type str') # FIXME: Should this handle bytes objects?
         value = json.loads(license_data)
-        self.identifier = uuid.UUID(value['identifer'])
+        self.identifier = uuid.UUID(value['identifier'])
         self.assignee = value['assignee']
-        self.content = self._content_class().set_content_from_license(value['content'])
+        self.content = self._content_class()
+        self.content.set_content_from_license(value['content'])
         self.creation_date_iso = value['creation_date']
-        self.expiry_date_iso = value['expiry_date']
+        if not value['expiry_date'] == '':
+            self.expiry_date_iso = value['expiry_date']
         self.validation_url = value['validation_url']
-        self.signature = self._signature_class().set_signature_from_license(value['signature'])
+        self.signature = self._signature_class()
+        self.signature.set_signature_from_license(value['signature'])
