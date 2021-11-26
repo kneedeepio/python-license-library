@@ -449,4 +449,9 @@ class TestLicense(unittest.TestCase):
         })
 
     def test_import_data_bad_data(self):
-        self.assertEqual(True, False, "FIXME: Implement this test")
+        self.logger.debug("%s import_data_bad_data", type(self).__name__)
+        dut_l = kneedeepio.license.License()
+        with self.assertRaises(TypeError):
+            dut_l.import_data(datetime.utcnow())
+        with self.assertRaises(TypeError):
+            dut_l.import_data(1234)
