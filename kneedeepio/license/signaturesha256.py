@@ -48,4 +48,5 @@ class SignatureSHA256(SignatureBase):
 
     def get_signature_for_license(self):
         # The config is returned as a dict from this method to the license object to be included in the license.
+        # FIXME: Should this raise an error if value is not set?
         return {"method": "SHA256", "value": self.value}

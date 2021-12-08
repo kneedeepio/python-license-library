@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 SOURCE_PATHS = [
-    os.path.join(BASE_PATH, 'kneedeepio'),
+    os.path.join(BASE_PATH, 'mmangler'),
     # Add libraries here
     os.path.join(BASE_PATH, 'tests')
 ]

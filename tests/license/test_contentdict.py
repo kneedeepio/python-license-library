@@ -20,6 +20,7 @@ class TestContentDict(unittest.TestCase):
     def test_creation(self):
         self.logger.debug("%s creation", type(self).__name__)
         dut_cd = kneedeepio.license.ContentDict()
+        self.assertIsInstance(dut_cd, kneedeepio.license.ContentDict)
 
     def test_get_set_content(self):
         self.logger.debug("%s get_set_content", type(self).__name__)

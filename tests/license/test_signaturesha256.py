@@ -22,6 +22,7 @@ class TestSignatureSHA256(unittest.TestCase):
     def test_creation(self):
         self.logger.debug("%s creation", type(self).__name__)
         dut_ssha = kneedeepio.license.SignatureSHA256()
+        self.assertIsInstance(dut_ssha, kneedeepio.license.SignatureSHA256)
 
     def test_get_set_value(self):
         self.logger.debug("%s get_set_content", type(self).__name__)

@@ -21,6 +21,9 @@ from kneedeepio.license.exceptions import \
 
 ### CLASSES ###
 class License:
+    # pylint: disable=R0902
+    #    too-many-instance-attributes - pylint seems to think that each getter and setter is a different attribute
+
     def __init__(self, content_class = ContentBase, signature_class = SignatureBase):
         if not issubclass(content_class, ContentBase):
             raise TypeError('content_class must be a subclass of ContentBase')
@@ -66,7 +69,6 @@ class License:
 
     @content.setter
     def content(self, value):
-        # FIXME: Should this be able to check for the implemented ContentBase Class?
         if not isinstance(value, self._content_class):
             raise TypeError('Expecting object of type {}'.format(type(self._content_class).__name__))
         self._content = value

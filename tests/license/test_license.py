@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 ### IMPORTS ###
-import json
+#import json
 import logging
 import random
 import string
@@ -24,6 +24,8 @@ from kneedeepio.license.exceptions import \
 
 ### CLASSES ###
 class TestLicense(unittest.TestCase):
+    # pylint: disable=R0904
+    #    too-many-public-methods: There's a lot of conditions to check, and I prefer to have lots of small tests.
     def setUp(self):
         # Setup logging for the class
         self.logger = logging.getLogger(type(self).__name__)
@@ -33,26 +35,31 @@ class TestLicense(unittest.TestCase):
         self.logger.debug("%s creation", type(self).__name__)
         # NOTE: Don't need to test default values as those will be handled in their getter & setter tests
         dut_l = kneedeepio.license.License()
+        self.assertIsInstance(dut_l, kneedeepio.license.License)
 
     def test_creation_content_class(self):
         self.logger.debug("%s creation_content_class", type(self).__name__)
         # NOTE: Don't need to test default values as those will be handled in their getter & setter tests
         dut_l = kneedeepio.license.License(content_class = kneedeepio.license.ContentDict)
+        self.assertIsInstance(dut_l, kneedeepio.license.License)
 
     def test_creation_signature_class(self):
         self.logger.debug("%s creation_signature_class", type(self).__name__)
         # NOTE: Don't need to test default values as those will be handled in their getter & setter tests
         dut_l = kneedeepio.license.License(signature_class = kneedeepio.license.SignatureSHA256)
+        self.assertIsInstance(dut_l, kneedeepio.license.License)
 
     def test_creation_bad_content_class(self):
         self.logger.debug("%s creation_bad_content_class", type(self).__name__)
         with self.assertRaises(TypeError):
             dut_l = kneedeepio.license.License(content_class = str)
+            self.assertIsInstance(dut_l, kneedeepio.license.License)
 
     def test_creation_bad_signature_class(self):
         self.logger.debug("%s creation_bad_signature_class", type(self).__name__)
         with self.assertRaises(TypeError):
             dut_l = kneedeepio.license.License(signature_class = dict)
+            self.assertIsInstance(dut_l, kneedeepio.license.License)
 
     def test_get_set_identifier(self):
         self.logger.debug("%s get_set_identifier", type(self).__name__)
@@ -324,6 +331,7 @@ class TestLicense(unittest.TestCase):
         dut_l.validation_url = "https://example.com/validate"
         # Get data string and compare to example
         test_dfs1 = dut_l.get_data_for_signing()
+        # pylint: disable-next=C0301
         data_dfs1 = '{"assignee":"name@example.com","content":{"key1":"value2","key3":"value5"},"creation_date":"1969-12-31T17:00:03","expiry_date":"","identifier":"12345678-1234-5678-1234-567812345678","validation_url":"https://example.com/validate"}'
         self.assertEqual(test_dfs1, data_dfs1)
         # Set expiry_date and compare again

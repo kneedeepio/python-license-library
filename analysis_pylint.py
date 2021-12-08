@@ -2,14 +2,26 @@ import os
 import sys
 from pylint import epylint as lint
 
+# Add directories to exclude to this list.
+EXCLUDE_DIRS = ['venv']
+
+def get_result_value(result_string):
+    tmp_res_list = result_string.rstrip().split('\n')
+    for item in tmp_res_list:
+        if 'Your code has been rated at' in item:
+            tmp_result = float(item.split()[6].split('/')[0])
+            return tmp_result
+    return None
+
 # Get a list of all python files in the project
 print('Compiling list of modules...')
 MODULES = []
-for i in os.walk(os.path.abspath(os.path.join(os.path.abspath(__file__), '..'))):
-    path, folders, files = i
+for i in os.walk(os.path.abspath(os.path.join(os.path.abspath(__file__), '..')), topdown = True):
+    root, dirs, files = i
+    dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
     for file in files:
         if file.endswith('.py'):
-            MODULES.append(os.path.join(path, file))
+            MODULES.append(os.path.join(root, file))
 
 # Run PyLint on all of the modules, keeping the output
 RESULTS = {}
@@ -22,7 +34,7 @@ for mod in MODULES:
     ERRORS.append(stderr)
 
 # Generate a report to save in the project, keeping track of scores
-print('Generating report...')
+print('\n--- Generating report ---')
 REPORT = ''
 SCORES = []
 for mod in RESULTS:
@@ -32,10 +44,9 @@ for mod in RESULTS:
     REPORT += '\n\n'
 
     # Get the score of the result
-    score_line = res.strip().split('\n')[-1]
-    if score_line:
-        score = float(score_line.split()[6].split('/')[0])
-        SCORES.append(score)
+    tmp_score = get_result_value(res)
+    if tmp_score:
+        SCORES.append(tmp_score)
 
 # Create a summary of the analysis
 ANALYSIS = 'Files analyzed: {}\nAverage score: {}\n\n'.format(str(len(SCORES)), str(sum(SCORES)/len(SCORES)))
